@@ -19,4 +19,7 @@ int getH264StartCodeIndex(const unsigned char *pes_packet,
 
 void setTransportScramblingControl(unsigned char *ts_packet, unsigned char byte);
 
+int encryptTsStream(unsigned char *input_buffer, int buffer_size, int VIDEO_PID,
+		unsigned char aes_key[16], unsigned char aes_iv[16]);
+
 #endif /* ENCRYPTIONLIBRARY_H_ */
