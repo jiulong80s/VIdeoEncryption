@@ -15,9 +15,8 @@
 
 void print_menu(char *this_program_name) {
 	printf("\nUsage:");
-	printf(
-			"%s -i [Input File Name] -o [Output File Name] -k [Key] -v [Vector] -l [progress log file name]",
-			this_program_name);
+	printf("%s -i [Input File Name] -o [Output File Name]",this_program_name);
+	printf("\n-k [Key] -v [Vector] -l [progress log file name] -e [encryption(none for decryption)]");
 	printf("\n");
 }
 
@@ -38,9 +37,9 @@ void convert_Hex_string_to_uchar(char *myarg, unsigned char **uchar) {
 
 void convert_input_params_to_vars(int argc, char **argv, char **TS_FILE,
 		char **TS_OUTPUT_FILE, unsigned char **aes_key, unsigned char **aes_iv,
-		int * video_pid) {
+		int * video_pid, int *encrypt) {
 	int c;
-	while ((c = getopt(argc, argv, "h:i:o:k:v:l:p:")) != -1)
+	while ((c = getopt(argc, argv, "h:i:o:k:v:l:p:e:")) != -1)
 		switch (c) {
 		case 'i':
 			*TS_FILE = strdup(optarg);
@@ -58,7 +57,10 @@ void convert_input_params_to_vars(int argc, char **argv, char **TS_FILE,
 			*video_pid = atoi(optarg) & 0xFF;
 			break;
 		case 'l':
-			printf("\noption l: %s", optarg);
+			break;
+		case 'e':
+			printf("\ENCRYPTION");
+			*encrypt = 1;
 			break;
 		case '?':
 			print_menu(argv[0]);
@@ -315,5 +317,52 @@ int encryptTsStream(unsigned char *input_buffer, int buffer_size, int VIDEO_PID,
 
 	} // while()
 	time_end = time(0);
-	return (time_end-time_start);
+	return (time_end - time_start);
+}
+
+int decryptTsStream(unsigned char *input_buffer, int buffer_size,
+		unsigned char aes_key[16], unsigned char aes_iv[16]) {
+
+	static time_t time_start, time_end;
+	static int TS_PACKET_LEN = 188;
+	int out_len, index = 0;
+	unsigned char* ts_packet;
+	unsigned char* aes_input;
+
+	int interations = buffer_size / TS_PACKET_LEN;
+	printf("-> %d iterations", interations);
+	time_start = time(0);  // record initial time
+
+	while (index < interations) {
+		ts_packet = input_buffer + (index * TS_PACKET_LEN);
+
+		// 1) check we have the sync byte
+		if (ts_packet[0] == 0x47) {
+
+			// 2) check it's encrypted
+			// [1][0]  part of I-frame
+			// [1][1] start of I-Frame
+			if ((ts_packet[3] & 0x80) == 0x80) { // TO DO !!!!!!
+				setTransportScramblingControl(ts_packet, 0x00);
+				// +++++ dencryption +++
+				aes_input = ts_packet + 12;
+				// Initialize OpenSSL
+				EVP_CIPHER_CTX ctx;
+				EVP_CIPHER_CTX_init(&ctx);
+				EVP_CIPHER_CTX_set_padding(&ctx, 0); //0 for no padding, 1 for padding  // ret ==1 here
+				EVP_DecryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, aes_key,
+						aes_iv);
+				EVP_DecryptUpdate(&ctx, aes_input, &out_len, aes_input, 176);
+				// ----- encryption ---
+
+			}
+			index++;
+		} else {
+			Log("ERROR: missed a sync byte. not a TS stream");
+			return -1;
+		}
+
+	} // while()
+	time_end = time(0);
+	return (time_end - time_start);
 }
