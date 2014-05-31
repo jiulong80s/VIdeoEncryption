@@ -7,11 +7,66 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <openssl/aes.h>
-//#include <openssl/rand.h>
+#include <unistd.h>
+#include <sys/time.h>
 #include <openssl/evp.h>
 
 #include "encryptionlibrary.h"
+
+void print_menu(char *this_program_name) {
+	printf("\nUsage:");
+	printf(
+			"%s -i [Input File Name] -o [Output File Name] -k [Key] -v [Vector] -l [progress log file name]",
+			this_program_name);
+	printf("\n");
+}
+
+void convert_Hex_string_to_uchar(char *myarg, unsigned char **uchar) {
+
+	char *str = malloc(2 * sizeof(char));
+	int i = 0, j = 0, value;
+	char *p;
+	for (; i < 2 * (16); i++) {
+		str[0] = myarg[0 + i];
+		str[1] = myarg[1 + i];
+		value = strtoul(str, &p, 16);
+		(*uchar)[j++] = value;
+//		printf("\n-->%d", value);
+		i++;
+	}
+}
+
+void convert_input_params_to_vars(int argc, char **argv, char **TS_FILE,
+		char **TS_OUTPUT_FILE, unsigned char **aes_key, unsigned char **aes_iv,
+		int * video_pid) {
+	int c;
+	while ((c = getopt(argc, argv, "h:i:o:k:v:l:p:")) != -1)
+		switch (c) {
+		case 'i':
+			*TS_FILE = strdup(optarg);
+			break;
+		case 'o':
+			*TS_OUTPUT_FILE = strdup(optarg);
+			break;
+		case 'k':
+			convert_Hex_string_to_uchar(optarg, aes_key);
+			break;
+		case 'v':
+			convert_Hex_string_to_uchar(optarg, aes_iv);
+			break;
+		case 'p':
+			*video_pid = atoi(optarg) & 0xFF;
+			break;
+		case 'l':
+			printf("\noption l: %s", optarg);
+			break;
+		case '?':
+			print_menu(argv[0]);
+			break;
+		default:
+			abort();
+		}
+}
 
 // a simple hex-print routine. could be modified to print 16 bytes-per-line
 void hex_print(const unsigned char *pv, size_t len) {
@@ -110,6 +165,8 @@ void Log(char * msg) {
 int encryptTsStream(unsigned char *input_buffer, int buffer_size, int VIDEO_PID,
 		unsigned char aes_key[16], unsigned char aes_iv[16]) {
 
+	static time_t time_start, time_end;
+
 	int H264_IFRAME_START_CODE_LEN = 3;
 	static int TS_PACKET_LEN = 188;
 	int index = 0, pid, h264Index, inIframe = 0, out_len;
@@ -121,6 +178,7 @@ int encryptTsStream(unsigned char *input_buffer, int buffer_size, int VIDEO_PID,
 
 	int interations = buffer_size / TS_PACKET_LEN;
 	printf("-> %d iterations", interations);
+	time_start = time(0);  // record initial time
 	while (index < interations) {
 //	while (index < 15) {
 		ts_packet = input_buffer + (index * TS_PACKET_LEN);
@@ -256,5 +314,6 @@ int encryptTsStream(unsigned char *input_buffer, int buffer_size, int VIDEO_PID,
 		}
 
 	} // while()
-	return 1;
+	time_end = time(0);
+	return (time_end-time_start);
 }

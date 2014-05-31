@@ -14,30 +14,41 @@
 // main entrypoint
 int main(int argc, char **argv) {
 
-	char *TS_FILE = "/home/fabio/workspace2/DemoTS/file34-10MB.mpg";
-	char *TS_OUTPUT_FILE = "/home/fabio/workspace2/DemoTS/encX-file34-10MB.mpg";
+	char *TS_FILE;
+	char *TS_OUTPUT_FILE;
+	unsigned char *aes_key;
+	unsigned char *aes_iv;
+	int video_pid=0x31; // depending on the stream used
 
-	unsigned char aes_key[16] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-			0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F }; // 128:8=16
-
-	unsigned char aes_iv[16] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-			0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F };
-
-	const int VIDEO_PID = 0x31; // depending on the stream used
 
 	/* initialization */
+	int computation_time;
 	unsigned char *input_buffer;
 	int buffer_size;
+	aes_key = malloc(16 * sizeof(char));
+	aes_iv  = malloc(16 * sizeof(char));
+	TS_FILE = malloc(255 * sizeof(char));
+	TS_OUTPUT_FILE = malloc(255 * sizeof(char));
+
+	convert_input_params_to_vars(argc, argv , &TS_FILE, &TS_OUTPUT_FILE , &aes_key, &aes_iv, &video_pid );
+	printf("\n Input clear file:%s", TS_FILE);
+	printf("\n Output encrypted file:%s", TS_OUTPUT_FILE);
+	printf("\n Key:"); hex_print(aes_key,16);
+	printf("\n Iv:");  hex_print(aes_iv,16);
+	printf("\n Video Pid:0x%x",video_pid);
+//	printf("\n Logfile:%s",);
+	printf("\n");
+
+
+
 
 	// load file into memory
 	buffer_size = loadFile(TS_FILE, &input_buffer);
-
-	encryptTsStream(input_buffer, buffer_size, VIDEO_PID, aes_key,
-			aes_iv);
+	computation_time = encryptTsStream(input_buffer, buffer_size, video_pid, aes_key, aes_iv);
 
 	int result = saveFile(TS_OUTPUT_FILE, input_buffer, buffer_size);
 	if (result)
-		printf("\n encryption completed correctly\n");
+		printf("\n encryption completed correctly in %d seconds \n",computation_time);
 	else
 		printf("\n encryption ERROR\n");
 
