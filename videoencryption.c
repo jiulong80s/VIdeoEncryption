@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "functions.h"
 #include "encryptionlibrary.h"
 
 // main entrypoint
@@ -43,7 +44,6 @@ int main(int argc, char **argv) {
 		printf("\n ENCRYPTION \n");
 	else
 		printf("\n DECRYPTION \n");
-//	printf("\n Logfile:%s",);
 	printf("\n");
 return 0;
 
