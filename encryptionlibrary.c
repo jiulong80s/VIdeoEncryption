@@ -15,6 +15,10 @@
 #include "functions.h"
 
 
+int extracth264VideoPid(unsigned char *input_buffer) {
+	// TOBEDONE
+	return -1;
+}
 
 int getH264StartCodeIndex(const unsigned char *pes_packet, int start_index,
 		int pes_packet_length) {

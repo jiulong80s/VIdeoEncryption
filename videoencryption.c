@@ -45,6 +45,9 @@ int main(int argc, char **argv) {
 	else
 		printf("\n DECRYPTION \n");
 	printf("\n");
+
+	video_pid = extracth264VideoPid(input_buffer);
+
 return 0;
 
 	if (encrypt) {
