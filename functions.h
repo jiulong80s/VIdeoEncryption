@@ -18,6 +18,6 @@ void hex_print(const unsigned char *pv, size_t len);
 void convert_Hex_string_to_uchar(char *myarg, unsigned char **uchar);
 void convert_input_params_to_vars(int argc, char **argv, char **TS_FILE,
 		char **TS_OUTPUT_FILE, unsigned char **aes_key, unsigned char **aes_iv,
-		int * video_pid, int *encrypt);
+		int *encrypt);
 
 #endif /* FUNCTIONS_H_ */

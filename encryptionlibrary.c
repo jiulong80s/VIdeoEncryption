@@ -14,10 +14,110 @@
 #include "encryptionlibrary.h"
 #include "functions.h"
 
+typedef enum MPEG2StreamType {
+	BDA_UNITIALIZED_MPEG2STREAMTYPE = -1,
+	Reserved1 = 0x00,
+	ISO_IEC_11172_2_VIDEO = 0x01,
+	ISO_IEC_13818_2_VIDEO = 0x02,
+	ISO_IEC_11172_3_AUDIO = 0x03,
+	ISO_IEC_13818_3_AUDIO = 0x04,
+	ISO_IEC_13818_1_PRIVATE_SECTION = 0x05,
+	ISO_IEC_13818_1_PES = 0x06,
+	ISO_IEC_13522_MHEG = 0x07,
+	ANNEX_A_DSM_CC = 0x08,
+	ITU_T_REC_H_222_1 = 0x09,
+	ISO_IEC_13818_6_TYPE_A = 0x0A,
+	ISO_IEC_13818_6_TYPE_B = 0x0B,
+	ISO_IEC_13818_6_TYPE_C = 0x0C,
+	ISO_IEC_13818_6_TYPE_D = 0x0D,
+	ISO_IEC_13818_1_AUXILIARY = 0x0E,
+	ISO_IEC_13818_7_AUDIO = 0x0F,
+	ISO_IEC_14496_2_VISUAL = 0x10,
+	ISO_IEC_14496_3_AUDIO = 0x11,
+	ISO_IEC_14496_1_IN_PES = 0x12,
+	ISO_IEC_14496_1_IN_SECTION = 0x13,
+	ISO_IEC_13818_6_DOWNLOAD = 0x14,
+	METADATA_IN_PES = 0x15,
+	METADATA_IN_SECTION = 0x16,
+	METADATA_IN_DATA_CAROUSEL = 0x17,
+	METADATA_IN_OBJECT_CAROUSEL = 0x18,
+	METADATA_IN_DOWNLOAD_PROTOCOL = 0x19,
+	IRPM_STREAMM = 0x1A,
+	ITU_T_H264 = 0x1B, // ****
+	ISO_IEC_13818_1_RESERVED = 0x1C,
+	USER_PRIVATE = 0x10,
+	ISO_IEC_USER_PRIVATE = 0x80,
+	DOLBY_AC3_AUDIO = 0x81,
+	DOLBY_DIGITAL_PLUS_AUDIO_ATSC = 0X87
+} MPEG2StreamType;
 
-int extracth264VideoPid(unsigned char *input_buffer) {
-	// TOBEDONE
-	return -1;
+/**
+ * returns the video pid (if present) of the H264 video stream.
+ * @params input_buffer: pointer to the ts stream
+ * @params buffer_size: the size of the ts stream
+ * @return the video pid.
+ * If no H264 video pid is found returns -1;
+ **/
+int extracth264VideoPid(unsigned char *input_buffer, int buffer_size) {
+
+	static int TS_PACKET_LEN = 188;
+	int found = 0;
+	int pid, index = 0;
+	int PMT_pid = -1;
+	int video_pid = -1, stream_type, stream_pid;
+	unsigned char* ts_packet;
+
+//	int index = 0, pid, h264Index, inIframe = 0, out_len;
+//	int lastPacketIsIFrame = 0, pes_packet_length;
+
+	int interations = buffer_size / TS_PACKET_LEN;
+	while (index < interations && !found) {
+		ts_packet = input_buffer + (index * TS_PACKET_LEN);
+
+		// 1) check we have the sync byte
+		if (ts_packet[0] == 0x47) {
+
+			// 2) check it's a PAT (pid=0x00)
+			pid = ts_packet[2] + ((ts_packet[+1] & 0x1F) << 8);
+			if (pid == 0x00) {
+				// found PAT, get the PMT pid
+				PMT_pid = ((ts_packet[15] & 0x1F) << 8) + ts_packet[16];
+//				printf("\ntrovato PAT !!! PMT pid = 0x%02x \n", PMT_pid);
+			} else if (pid == PMT_pid) {
+				// found PMT, extract the programs
+//				printf("\ntrovato PMT !! \n");
+//				hex_print(ts_packet, TS_PACKET_LEN);
+				found = 1;
+				int section_length = ((ts_packet[6] & 0x0F) << 8)
+						+ ts_packet[7];
+				int offset = 17;
+
+				while ((offset - 4) < section_length) {
+					stream_type = ts_packet[offset];
+					stream_pid = ((ts_packet[offset + 1] & 0x1F) << 8)
+							+ ts_packet[offset + 2];
+//					printf(
+//							"\n offset(%d) :: stream:: type=0x%02x , pid=0x%02x \n",
+//							offset, stream_type, stream_pid);
+					// check if it's h264 video stream
+					if (stream_type == ITU_T_H264) {
+//						printf("\nvideo is h264\n");
+						video_pid = stream_pid;
+//						printf("\ntrovato h264 video pid=0x%02x \n", video_pid);
+					}
+					offset += (5 + ((ts_packet[offset + 3] & 0x0F) << 8)
+							+ ts_packet[offset + 4]);
+//					printf("\n new offset=%d\n", offset);
+				}
+
+			}
+
+		} else {
+			printf("\n no sync byte ???? \n");
+		}
+		index++;
+	} // while
+	return video_pid;
 }
 
 int getH264StartCodeIndex(const unsigned char *pes_packet, int start_index,

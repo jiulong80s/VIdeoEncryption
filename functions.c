@@ -38,7 +38,7 @@ void convert_Hex_string_to_uchar(char *myarg, unsigned char **uchar) {
 
 void convert_input_params_to_vars(int argc, char **argv, char **TS_FILE,
 		char **TS_OUTPUT_FILE, unsigned char **aes_key, unsigned char **aes_iv,
-		int * video_pid, int *encrypt) {
+		int *encrypt) {
 	int c;
 	while ((c = getopt(argc, argv, "h:i:o:k:v:l:p:e:")) != -1)
 		switch (c) {
@@ -53,9 +53,6 @@ void convert_input_params_to_vars(int argc, char **argv, char **TS_FILE,
 			break;
 		case 'v':
 			convert_Hex_string_to_uchar(optarg, aes_iv);
-			break;
-		case 'p':
-			*video_pid = atoi(optarg) & 0xFF;
 			break;
 		case 'l':
 			break;

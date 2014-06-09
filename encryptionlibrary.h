@@ -8,13 +8,14 @@
 #ifndef ENCRYPTIONLIBRARY_H_
 #define ENCRYPTIONLIBRARY_H_
 
-/*
+/**
  * returns the video pid (if present) of the H264 video stream.
- * If no video pid is found returns -1;
- * If video is found but is not H264, returns -2
- */
-int extracth264VideoPid(unsigned char *input_buffer);
-
+ * @params input_buffer: pointer to the ts stream
+ * @params buffer_size: the size of the ts stream
+ * @return the video pid.
+ * If no H264 video pid is found returns -1;
+ **/
+int extracth264VideoPid(unsigned char *input_buffer, int buffer_size);
 
 int getH264StartCodeIndex(const unsigned char *pes_packet, int start_index,
 		int pes_packet_length);
